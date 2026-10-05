@@ -18,7 +18,7 @@ def evaluate_node(ast_node):
             scope_stack[-1][name] = value
             return scope_stack[-1][name]
         case NodeTypes.IDENTIFIER:
-            if scope_stack[-1].get(ast_node.value):
+            if ast_node.value in scope_stack[-1]:
                 return scope_stack[-1][ast_node.value]
             return scope_stack[0].get(ast_node.value)
         case NodeTypes.NUMBER:
@@ -56,8 +56,8 @@ def evaluate_node(ast_node):
                     return left == right
         case NodeTypes.LOOP:
             i = evaluate_node(ast_node.value)
-            if type(i) == int:
-                for x in range(i):
+            if type(i) == int or type(i) == float:
+                for x in range(int(i)):
                     for statement in ast_node.right:
                         evaluate_node(statement)
             else:

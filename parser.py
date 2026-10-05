@@ -73,6 +73,18 @@ def find_matching_end(tokens_arr, start):
         i += 1
     return None
 
+def find_matching_else(tokens_arr, start, end):
+    depth = 0
+    for i in range(start + 1, end):
+        t = tokens_arr[i].type
+        if tokens_arr[i].type == TokenType.IF or tokens_arr[i].type == TokenType.LOOP or tokens_arr[i].type == TokenType.FUNCTION:
+            depth += 1
+        elif t == TokenType.END:
+            depth -= 1
+        elif t == TokenType.ELSE and depth == 0:
+            return i
+    return None
+
 def find_token_type(tokens_arr, token_type, start, end=None):
     i = start
     if not end:
@@ -98,7 +110,7 @@ def parse_if_statement(tokens_arr, start, end):
     new_line_token = find_token_type(tokens_arr, TokenType.NEWLINE, start)
     if_expr = parse_expression(tokens_arr, start + 1, new_line_token - 1)
     body_start = new_line_token + 1
-    else_token = find_token_type(tokens_arr, TokenType.ELSE, start, end)
+    else_token = find_matching_else(tokens_arr, start, end)
 
     if else_token is None:
         if_statement = parse_program(tokens_arr[body_start:end])
@@ -141,18 +153,19 @@ def parse_loop(tokens_arr, start, end):
 def parse_expression(tokens_arr, start, end):
     #inclusive end, inclusive start
     for i in range(end, start - 1, -1):
+        if (tokens_arr[i].type == TokenType.OPERATOR) and (tokens_arr[i].value == '>' or tokens_arr[i].value == '<'
+                                                           or tokens_arr[i].value == '>=' or tokens_arr[i].value == '<=' or tokens_arr[i].value == '=='):
+            left = parse_expression(tokens_arr, start, i - 1)
+            right = parse_expression(tokens_arr, i + 1, end)
+            return ASTNode(NodeTypes.BINOP, tokens_arr[i].value, left, right)
+
+    for i in range(end, start - 1, -1):
         if (tokens_arr[i].type == TokenType.OPERATOR) and (tokens_arr[i].value == '+' or tokens_arr[i].value == '-'):
             left = parse_expression(tokens_arr, start, i - 1)
             right = parse_expression(tokens_arr, i + 1, end)
             return ASTNode(NodeTypes.BINOP, tokens_arr[i].value, left, right)
     for i in range(end, start - 1, -1):
         if (tokens_arr[i].type == TokenType.OPERATOR) and (tokens_arr[i].value == '*' or tokens_arr[i].value == '/'):
-            left = parse_expression(tokens_arr, start, i - 1)
-            right = parse_expression(tokens_arr, i + 1, end)
-            return ASTNode(NodeTypes.BINOP, tokens_arr[i].value, left, right)
-    for i in range(end, start - 1, -1):
-        if (tokens_arr[i].type == TokenType.OPERATOR) and (tokens_arr[i].value == '>' or tokens_arr[i].value == '<'
-                                                           or tokens_arr[i].value == '>=' or tokens_arr[i].value == '<=' or tokens_arr[i].value == '=='):
             left = parse_expression(tokens_arr, start, i - 1)
             right = parse_expression(tokens_arr, i + 1, end)
             return ASTNode(NodeTypes.BINOP, tokens_arr[i].value, left, right)
